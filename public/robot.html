@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Web-3D-HMI-Demo</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+        #info {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display:block;
+        }
+        #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+    </style>
+</head>
+
+<body>
+<div id="info">Web-3D-HMI-Demo</div>
+
+<script src="js/three.js"></script>
+<script src="js/OBJLoader.js"></script>
+<script src="js/TrackballControls.js"></script>
+<script src='js/dat.gui.min.js'></script>
+<script>
+
+var Roboter = {
+    "BaseFrame" :
+    {
+        "filename" : "./models/robot/BaseFrame.obj",
+        "position" : new THREE.Vector3(0.0, 0.0, 0.0),
+        "rotAxis"  : "z",
+        "material" : new THREE.MeshPhongMaterial( { color: 0x303030, flatShading: true } ),
+		"addAxis"  : false,
+    },
+    "RotatingColumn" :
+    {
+        "filename" : "./models/robot/RotatingColumn.obj",
+        "position" : new THREE.Vector3(0.0, 0.0, -555.0),
+        "rotAxis"  : "z",
+        "material" : new THREE.MeshPhongMaterial( { color: 0xff5d00, flatShading: true } ),
+        "rotation" : { setpoint: 0.0, feedback: 0.0, min: -170.0, max: 170.0, speed: 97.5 },
+		"addAxis"  : true,
+    },
+    "Motor_RotatingColumn" :
+    {
+        "filename" : "./models/robot/Motor_RotatingColumn.obj",
+        "position" : new THREE.Vector3(0.0, 0.0, -555.0),
+        "rotAxis"  : "",
+        "material" : new THREE.MeshPhongMaterial( { color: 0x303030, flatShading: true } ),
+		"addAxis"  : false,
+    },
+    "LinkArm" : 
+    {
+        "filename" : "./models/robot/LinkArm.obj",
+        "position" : new THREE.Vector3(-500.0, 0.0, -1045.0),
+        "rotAxis"  : "y",
+        "material" : new THREE.MeshPhongMaterial( { color: 0xff5d00, flatShading: true } ),
+        "rotation" : { setpoint: 0.0, feedback: 0.0, min: -40.0, max: 110.0, speed: 91.0  },
+		"addAxis"  : true,
+    },
+    "Motor_LinkArm" :
+    {
+        "filename" : "./models/robot/Motor_LinkArm.obj",
+        "position" : new THREE.Vector3(0.0, 0.0, -555.0),           // mounted at RotatingColumn
+        "rotAxis"  : "",
+        "material" : new THREE.MeshPhongMaterial( { color: 0x303030, flatShading: true } ),
+		"addAxis"  : false,
+    },
+    "Arm" : 
+    {
+        "filename" : "./models/robot/Arm.obj",
+        "position" : new THREE.Vector3(-500.0, 0.0, -2345.0),
+        "rotAxis"  : "y",
+        "material" : new THREE.MeshPhongMaterial( { color: 0xff5d00, flatShading: true } ),
+        "rotation" : { setpoint: 0.0, feedback: 0.0, min: -90.0, max: 65.0, speed: 89.0 },
+		"addAxis"  : true,
+    },
+    "Motor_Arm" :
+    {
+        "filename" : "./models/robot/Motor_Arm.obj",
+        "position" : new THREE.Vector3(-500.0, 0.0, -2345.0),       // mounted at Arm
+        "rotAxis"  : "",
+        "material" : new THREE.MeshPhongMaterial( { color: 0x303030, flatShading: true } ),
+		"addAxis"  : false,
+    },
+    "Wrist" : 
+    {
+        "filename" : "./models/robot/Wrist.obj",
+        "position" : new THREE.Vector3(-1550.0, 0.0, -2345.0),
+        "rotAxis"  : "y",
+        "material" : new THREE.MeshPhongMaterial( { color: 0xff5d00, flatShading: true } ),
+        "rotation" : { setpoint: 0.0, feedback: 0.0, min: -140.0, max: 100.0, speed: 90.0 },
+		"addAxis"  : true,
+    },
+    "Motor_Wrist" :
+    {
+        "filename" : "./models/robot/Motor_Wrist.obj",
+        "position" : new THREE.Vector3(-1550.0, 0.0, -2345.0),      // mounted at Wrist
+        "rotAxis"  : "",
+        "material" : new THREE.MeshPhongMaterial( { color: 0x303030, flatShading: true } ),
+		"addAxis"  : false,
+    },
+    "EndEffector" : 
+    {
+        "filename" : "./models/robot/EndEffector.obj",
+        "position" : new THREE.Vector3(-1850.0, 0.0, -2145.0),
+        "rotAxis"  : "z",
+        "material" : new THREE.MeshPhongMaterial( { color: 0x202020, flatShading: true } ),
+        "rotation" : { setpoint: 0.0, feedback: 0.0, min: -175.0, max: 175.0, speed: 177.0 },
+		"addAxis"  : true,
+    },
+    "Motor_EndEffector" :
+    {
+        "filename" : "./models/robot/Motor_EndEffector.obj",
+        "position" : new THREE.Vector3(-1550.0, 0.0, -2345.0),
+        "rotAxis"  : "",
+        "material" : new THREE.MeshPhongMaterial( { color: 0x303030, flatShading: true } ),
+		"addAxis"  : false,
+    },
+};
+
+var container;
+var camera, scene, renderer;
+var controls;
+var clock;
+var gui_options = {
+    plcControlActive: true,
+    showAxes: true,
+};
+
+var movingParts = ["RotatingColumn", "LinkArm", "Arm", "Wrist", "EndEffector" ];
+var objLoadingComplete = false;
+init();
+animate();
+
+function init() {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+
+    camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000);
+    camera.position.z = 800;
+    camera.position.y = 400;
+
+    // Stopwatch for time measurement
+    clock = new THREE.Clock();
+    // The scene
+    scene = new THREE.Scene();
+    // Grid
+    var helper = new THREE.GridHelper(1200, 60, 0xFF4444, 0x404040);
+    scene.add(helper);
+    // Lighting
+    var ambientLight = new THREE.AmbientLight(0xcccccc, 0.4);
+    scene.add(ambientLight);
+
+    var pointLight = new THREE.PointLight(0xffffff, 0.8);
+    camera.add(pointLight);
+    scene.add(camera);
+
+    function allLoadersDone() {
+        console.log("*** allLoadersDone ***");
+        // Add the robotarm elements to groups which are moved together
+        var xyz = 1.0;
+        var scale = new THREE.Vector3(xyz, xyz, xyz);
+        var offset = new THREE.Vector3();
+
+        Roboter["EndEffector"].group = new THREE.Group();
+        Roboter["Wrist"].group = new THREE.Group();
+        Roboter["Arm"].group = new THREE.Group();
+        Roboter["LinkArm"].group = new THREE.Group();
+        Roboter["RotatingColumn"].group = new THREE.Group();
+        Roboter["BaseFrame"].group = new THREE.Group();
+
+        // EndEffector
+        Roboter["EndEffector"].group.add(Roboter["EndEffector"].obj);
+        offset.copy(Roboter["Wrist"].position);
+        fixGroupPivot(Roboter["EndEffector"], offset);
+
+        // Wrist
+        Roboter["Wrist"].group.add(Roboter["Wrist"].obj);
+        Roboter["Wrist"].group.add(Roboter["Motor_EndEffector"].obj);
+        Roboter["Wrist"].group.add(Roboter["Motor_Wrist"].obj);
+        offset.copy(Roboter["Arm"].position)
+        fixGroupPivot(Roboter["Wrist"], offset);
+        Roboter["Wrist"].group.add(Roboter["EndEffector"].group);
+        
+        // Arm
+        Roboter["Arm"].group.add(Roboter["Arm"].obj);
+        Roboter["Arm"].group.add(Roboter["Motor_Arm"].obj);
+        offset.copy(Roboter["LinkArm"].position)
+        fixGroupPivot(Roboter["Arm"], offset);
+        Roboter["Arm"].group.add(Roboter["Wrist"].group);
+        
+        // LinkArm
+        Roboter["LinkArm"].group.add(Roboter["LinkArm"].obj);
+        
+        offset.copy(Roboter["RotatingColumn"].position)
+        fixGroupPivot(Roboter["LinkArm"], offset);
+        Roboter["LinkArm"].group.add(Roboter["Arm"].group);
+
+        // RotatingColumn
+        Roboter["RotatingColumn"].group.add(Roboter["RotatingColumn"].obj);
+        Roboter["RotatingColumn"].group.add(Roboter["Motor_RotatingColumn"].obj);
+        Roboter["RotatingColumn"].group.add(Roboter["Motor_LinkArm"].obj);
+        fixGroupPivot(Roboter["RotatingColumn"], new THREE.Vector3());
+        Roboter["RotatingColumn"].group.add(Roboter["LinkArm"].group);
+
+        // BaseFrame
+        Roboter["BaseFrame"].group.add(Roboter["BaseFrame"].obj);
+        Roboter["BaseFrame"].group.add(Roboter["RotatingColumn"].group);
+
+        // upright the whole robot
+        Roboter["BaseFrame"].group.rotation.set( - Math.PI / 2, 0, 0 );
+
+        // Fix rotation from XYZ to YXZ
+        // -> I have no idea why this is only neccessary on some groups and not all.
+        //    Without this the groups rotate only from -Pi/2 to +Pi/2
+        Roboter["LinkArm"].group.rotation.copy(new THREE.Euler(0, 0, 0, 'YXZ'));
+        Roboter["Arm"].group.rotation.copy(new THREE.Euler(0, 0, 0, 'YXZ'));
+        Roboter["Wrist"].group.rotation.copy(new THREE.Euler(0, 0, 0, 'YXZ'));
+
+        scene.add(Roboter["BaseFrame"].group);
+        objLoadingComplete = true;
+    }
+
+    function fixGroupPivot(robotPart, offset) {
+        var p = new THREE.Vector3();
+        p.copy(robotPart.position);
+        p.add(offset.negate());
+        robotPart.group.position.copy(p);
+    }
+
+    var manager = new THREE.LoadingManager(allLoadersDone);
+    var loader = new THREE.OBJLoader(manager);
+
+    function loadModel(robotPart, scale) {
+        loader.load(robotPart.filename, function (obj) {
+            robotPart.obj = obj;
+            robotPart.obj.traverse( function (child) {
+                if (child.isMesh) {
+                    // Adjust the pivot point for rotation.
+                    // Moves the objects thus the pivot point is on the origin.
+                    console.log("Mesh: " + child.name + " adjusting position: " + robotPart.position.toArray());
+                    child.geometry.translate(robotPart.position.x, robotPart.position.y, robotPart.position.z);
+                    child.material = robotPart.material;
+                }
+            } );
+
+            // Move object back, take the scale factor into account
+            robotPart.position.multiply(scale);
+            robotPart.position.negate();
+            robotPart.obj.scale.copy(scale);
+
+            if (robotPart.addAxis == true) {
+                // X-Axis = red
+                // Y-Axis = green
+                // Z-Axis = blue
+                var robotAxis = new THREE.AxesHelper(1000);
+                robotPart.obj.add(robotAxis);
+            }
+        });
+    }
+
+    var scale = new THREE.Vector3(0.1, 0.1, 0.1);
+
+    loadModel(Roboter["BaseFrame"], scale);
+    loadModel(Roboter["RotatingColumn"], scale);
+    loadModel(Roboter["Motor_RotatingColumn"], scale);
+    loadModel(Roboter["LinkArm"], scale);
+    loadModel(Roboter["Motor_LinkArm"], scale);
+    loadModel(Roboter["Arm"], scale);
+    loadModel(Roboter["Motor_Arm"], scale);
+    loadModel(Roboter["Wrist"], scale);
+    loadModel(Roboter["Motor_Wrist"], scale);
+    loadModel(Roboter["EndEffector"], scale);
+    loadModel(Roboter["Motor_EndEffector"], scale);
+
+    // Build DAT.GUI
+    var gui = new dat.GUI();
+    movingParts.forEach(function(name) {
+        var box = gui.addFolder(name);
+        box.add(Roboter[name].rotation, 'setpoint', Roboter[name].rotation.min, Roboter[name].rotation.max, 0.1 ).name('Setpoint [\xB0]').listen();
+        box.add(Roboter[name].rotation, 'feedback', Roboter[name].rotation.min, Roboter[name].rotation.max, 0.1 ).name('Feedback [\xB0]').listen();
+        box.add(Roboter[name].rotation, 'speed', 1.0, 200.0, 0.1 ).name('Speed [\xB0/s]').listen();
+        box.open();
+    });
+    gui.add(gui_options, 'plcControlActive').name("PLC control").listen();
+    showAxesController = gui.add(gui_options, 'showAxes').name("Show axes").onFinishChange(function(value) {
+        movingParts.forEach(function(name) {
+            // Better: check for prototype.constructor == AxesHelper
+            Roboter[name].obj.children[1].visible = value;
+        });
+    });
+
+    renderer = new THREE.WebGLRenderer();
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    controls = new THREE.TrackballControls(camera, renderer.domElement);
+    controls.rotateSpeed = 1.0;
+    controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.8;
+    controls.noZoom = false;
+    controls.noPan = false;
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.3;
+    controls.keys = [65, 83, 68];
+    controls.addEventListener('change', render);
+    
+    window.addEventListener('resize', onWindowResize, false);
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    controls.handleResize();
+    render();
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    render();
+}
+
+function render() {
+    if (objLoadingComplete == true) {
+        actionRobot();
+    }
+    renderer.render(scene, camera);
+}
+
+function actionRobot() {
+    var curRot = 0.0;
+    var deltaDegrees = 0.5;
+    var sp, fb, er, deltaRot, deltaRad;
+    var deltaTime = clock.getDelta();
+
+    movingParts.forEach(function(name) {
+        // Speed setpoint is in deg/s
+        deltaDegrees = Roboter[name].rotation.speed * deltaTime;
+        deltaRad = THREE.Math.degToRad(deltaDegrees);
+        // Get the rotation of the rotating axis
+        if (Roboter[name].rotAxis == "x") {
+            curRot = Roboter[name].group.rotation.x;
+        } else if (Roboter[name].rotAxis == "y") {
+            curRot = Roboter[name].group.rotation.y;
+        } else if (Roboter[name].rotAxis == "z") {
+            curRot = Roboter[name].group.rotation.z;
+        } else {
+            curRot = 0.0;
+        }
+        // Limit the position setpoint to min/max values
+        Roboter[name].rotation.setpoint = THREE.Math.clamp(Roboter[name].rotation.setpoint, Roboter[name].rotation.min, Roboter[name].rotation.max);
+        Roboter[name].rotation.feedback = THREE.Math.radToDeg(curRot);
+        sp = Roboter[name].rotation.setpoint;
+        fb = Roboter[name].rotation.feedback;
+        er = sp - fb;
+        deltaRot = 0.0;
+
+        if (er < 0.0) {
+            deltaRot = -deltaDegrees;
+            if (deltaRot < er) {
+                deltaRot = er;
+            }
+        } else if (er > 0.0) {
+            deltaRot = deltaDegrees;
+            if (deltaRot > er) {
+                deltaRot = er;
+            }
+        }
+        deltaRad = THREE.Math.degToRad(deltaRot);
+        // Rotate the axis by the calculated values
+        if (deltaRad != 0.0) {
+            if (Roboter[name].rotAxis == "x") {
+                Roboter[name].group.rotateX(deltaRad);
+            } else if (Roboter[name].rotAxis == "y") {
+                Roboter[name].group.rotateY(deltaRad);
+            } else if (Roboter[name].rotAxis == "z") {
+                Roboter[name].group.rotateZ(deltaRad);
+            }
+        }
+    });
+}
+
+/////////////////////////////
+getJsonData();
+
+var xhr;
+
+function getJsonData()
+{
+    xhr = new XMLHttpRequest();
+    xhr.open("GET", "getvalues", true);
+
+    xhr.onreadystatechange = function()
+    {
+    if (xhr.readyState == 4) {
+        var data = JSON.parse(xhr.responseText);
+            if (gui_options.plcControlActive) {
+                for(var name in data) {
+                    Roboter[name].rotation.setpoint = THREE.Math.clamp(data[name], Roboter[name].rotation.min, Roboter[name].rotation.max);
+                }
+            }
+            setTimeout("getJsonData()", 500);
+        }
+    }
+    xhr.send(null);
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "Web-3D-HMI-Demo",
+  "version": "0.0.1",
+  "description": "Demo Roboter Animation with S7 and three.js",
+  "main": "app-web-3d-hmi-demo.js",
+  "dependencies": {
+    "express": "^4.17.1",
+    "nodes7": "^0.3.11",
+    "three": "^0.115.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "copy1": "cp ./node_modules/three/build/three.js ./public/js/three.js",
+    "copy2": "cp ./node_modules/three/build/three.module.js ./public/js/three.module.js",
+    "copy3": "cp ./node_modules/three/examples/js/loaders/OBJLoader.js ./public/js/OBJLoader.js",
+    "copy4": "cp ./node_modules/three/examples/js/controls/TrackballControls.js ./public/js/TrackballControls.js",
+    "copy5": "cp ./node_modules/three/examples/js/libs/dat.gui.min.js ./public/js/dat.gui.min.js",
+    "postinstall": "npm run copy1 && npm run copy2 && npm run copy3 && npm run copy4 && npm run copy5"
+  },
+  "author": "Thomas Wiens",
+  "license": "ISC"
+}

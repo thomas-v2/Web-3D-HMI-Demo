@@ -1,0 +1,6 @@
+# Dependency directories
+node_modules/
+
+# Copied three.js files
+
+public/js/

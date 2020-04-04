@@ -1,0 +1,21 @@
+{
+    "webserver":
+    {
+        "port": 3000
+    },
+    "plc":
+    {
+        "host": "192.168.1.40",
+        "rack": 0,
+        "slot": 2,
+        "pollinterval": 250,
+        "vars": 
+        {
+            "RotatingColumn": "DB50,REAL0",
+            "LinkArm":        "DB50,REAL4",
+            "Arm":            "DB50,REAL8",
+            "Wrist":          "DB50,REAL12",
+            "EndEffector":    "DB50,REAL16"
+        }
+    }
+}
