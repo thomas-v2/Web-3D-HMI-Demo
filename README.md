@@ -11,7 +11,7 @@ The setpoint for each of the 5 axes are read out of the S7 program.
 The rotation to the the desired setpoint is done by some Javascript on the robot.html.
 The rotation speed of which the axis follows the setpoint can be configured from the Web GUI.
 
-![Demo application running in a Webbrowser](file://images/demo-web-robot-tablet.jpg)
+![Demo application running in a Webbrowser](https://github.com/thomas-v2/Web-3D-HMI-Demo/blob/master/images/demo-web-robot-tablet.jpg)
 
 ## Installation
 
