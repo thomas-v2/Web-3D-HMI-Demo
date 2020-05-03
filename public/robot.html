@@ -22,11 +22,35 @@
             display:block;
         }
         #info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+        
+        .RotatingColumn, .LinkArm, .Arm, .Wrist, .EndEffector {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            margin-left: 0px;
+            margin-top: 0px;
+            padding-left: 0.5em;
+            padding-right: 0.5em;
+            color: #fff;
+            background: rgba(100, 100, 100, 0.8);
+            border-radius: .5em;
+            font-size: 12px;
+            line-height: 1.2;
+            transition: opacity .5s;
+            visibility: hidden;
+        }
     </style>
 </head>
 
 <body>
 <div id="info">Web-3D-HMI-Demo</div>
+
+<div class="RotatingColumn" id="RotatingColumn"><p>A1</p></div>
+<div class="LinkArm" id="LinkArm"><p>A2</p></div>
+<div class="Arm" id="Arm"><p>A3</p></div>
+<div class="Wrist" id="Wrist"><p>A4</p></div>
+<div class="EndEffector" id="EndEffector"><p>A5</p></div>
 
 <script src="js/three.js"></script>
 <script src="js/OBJLoader.js"></script>
@@ -137,6 +161,7 @@ var clock;
 var gui_options = {
     plcControlActive: true,
     showAxes: true,
+    showAnnotations: true
 };
 
 var movingParts = ["RotatingColumn", "LinkArm", "Arm", "Wrist", "EndEffector" ];
@@ -301,6 +326,7 @@ function init() {
             Roboter[name].obj.children[1].visible = value;
         });
     });
+    gui.add(gui_options, 'showAnnotations').name("Annotations").listen();
 
     renderer = new THREE.WebGLRenderer();
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -317,7 +343,7 @@ function init() {
     controls.dynamicDampingFactor = 0.3;
     controls.keys = [65, 83, 68];
     controls.addEventListener('change', render);
-    
+
     window.addEventListener('resize', onWindowResize, false);
 }
 
@@ -338,6 +364,7 @@ function animate() {
 function render() {
     if (objLoadingComplete == true) {
         actionRobot();
+        updateAnnotations();
     }
     renderer.render(scene, camera);
 }
@@ -392,6 +419,24 @@ function actionRobot() {
                 Roboter[name].group.rotateZ(deltaRad);
             }
         }
+    });
+}
+
+function updateAnnotations() {
+    var annotation;
+    var vector = new THREE.Vector3();
+    movingParts.forEach(function(name) {
+        vector.setFromMatrixPosition(Roboter[name].obj.matrixWorld);
+        vector.project(camera);
+        vector.x = Math.round((0.5 + vector.x / 2) * (window.innerWidth / window.devicePixelRatio));
+        vector.y = Math.round((0.5 - vector.y / 2) * (window.innerHeight / window.devicePixelRatio));
+
+        annotation = document.querySelector("." + name);
+        annotation.style.top = `${vector.y}px`;
+        annotation.style.left = `${vector.x}px`;
+        annotation.style.visibility = gui_options.showAnnotations ? "visible" : "hidden";
+
+        document.getElementById(name).innerHTML = "<p>" + Roboter[name].rotation.feedback.toFixed(1) + "\xB0</p>";
     });
 }
 
