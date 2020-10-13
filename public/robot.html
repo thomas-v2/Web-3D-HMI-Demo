@@ -432,8 +432,8 @@ function updateAnnotations() {
         vector.y = Math.round((0.5 - vector.y / 2) * (window.innerHeight / window.devicePixelRatio));
 
         annotation = document.querySelector("." + name);
-        annotation.style.top = `${vector.y}px`;
-        annotation.style.left = `${vector.x}px`;
+        annotation.style.top = vector.y + "px";
+        annotation.style.left = vector.x + "px";
         annotation.style.visibility = gui_options.showAnnotations ? "visible" : "hidden";
 
         document.getElementById(name).innerHTML = "<p>" + Roboter[name].rotation.feedback.toFixed(1) + "\xB0</p>";
