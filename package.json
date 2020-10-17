@@ -10,12 +10,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "copy1": "cp ./node_modules/three/build/three.js ./public/js/three.js",
-    "copy2": "cp ./node_modules/three/build/three.module.js ./public/js/three.module.js",
-    "copy3": "cp ./node_modules/three/examples/js/loaders/OBJLoader.js ./public/js/OBJLoader.js",
-    "copy4": "cp ./node_modules/three/examples/js/controls/TrackballControls.js ./public/js/TrackballControls.js",
-    "copy5": "cp ./node_modules/three/examples/js/libs/dat.gui.min.js ./public/js/dat.gui.min.js",
-    "postinstall": "npm run copy1 && npm run copy2 && npm run copy3 && npm run copy4 && npm run copy5"
+    "postinstall": "node postinstall.js"
   },
   "author": "Thomas Wiens",
   "license": "ISC"
