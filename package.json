@@ -4,7 +4,7 @@
   "description": "Demo Roboter Animation with S7 and three.js",
   "main": "app-web-3d-hmi-demo.js",
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.18.2",
     "nodes7": "^0.3.11",
     "three": ">=0.125.0"
   },
